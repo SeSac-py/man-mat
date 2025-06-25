@@ -9,6 +9,7 @@ from views.result1 import Result1View
 from views.result2 import Result2View
 from views.result12 import Result12View
 from views.analyze import Analyze
+from views.result21 import Result21View
 from controllers.search_controller import SearchController
 
 class MainApp(QStackedWidget):
@@ -21,6 +22,7 @@ class MainApp(QStackedWidget):
         self.result1 = Result1View(self)
         self.result2 = Result2View(self)
         self.analyze = Analyze(win_width, win_height, parent=self)
+        self.result21 = Result21View(self)
         self.result12 = Result12View([], [], self)  # 빈 데이터로 초기화
         self.result12.goto_analyze_signal.connect(self.goto_analyze)
         self.addWidget(self.result12)  # QStackedWidget에 추가
@@ -35,6 +37,7 @@ class MainApp(QStackedWidget):
         self.addWidget(self.result2)    # 5
         self.addWidget(self.analyze)    # 6
         self.addWidget(self.result12)   # 7
+        self.addWidget(self.result21)   # 8
 
         self.setCurrentIndex(0)
         self.search_controller = SearchController(self.search_box)

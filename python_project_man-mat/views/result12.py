@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 
 class Result12View(QWidget):
-    goto_analyze_signal = pyqtSignal(int)  # 점수 신호
+    goto_analyze_signal = pyqtSignal(int)
 
     def __init__(self, user_answers, correct_answers, parent=None):
         super().__init__(parent)
@@ -15,7 +15,6 @@ class Result12View(QWidget):
         self.user_answers = user_answers
         self.correct_answers = correct_answers
         self.score = self.calculate_score()
-
         layout = QVBoxLayout()
         layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(15)
@@ -78,11 +77,14 @@ class Result12View(QWidget):
         self.score = self.calculate_score()
         self.score_value.setText(str(self.score))
 
-    def goto_analyze(self, score):
-        self.goto_analyze_signal.emit(self.score)  # 점수 신호 발송
+    def goto_analyze(self):
+        self.goto_analyze_signal.emit(self.score)
 
     def goto_result1(self):
         if self.parent() is not None:
+            result1 = self.parent().widget(4)  # Result1View의 인덱스가 4라고 가정
+            if hasattr(result1, 'init_timer_and_answers'):
+                result1.init_timer_and_answers()
             self.parent().setCurrentIndex(4)  # Result1로 이동
 
     def end_program(self):
@@ -104,8 +106,6 @@ class Result12View(QWidget):
         now = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"score_{now}.txt"
         current_score = self.score
-
-        # 기존 파일에서 최고 점수 읽기
         max_score = 0
         for fname in os.listdir('.'):
             if fname.startswith("score_"):
@@ -118,7 +118,6 @@ class Result12View(QWidget):
                                 max_score = s
                 except:
                     pass
-
         if current_score >= max_score or max_score == 0:
             with open(filename, 'w', encoding='utf-8') as f:
                 f.write(f"점수: {current_score}\n")

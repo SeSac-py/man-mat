@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QSize
+import os
 
 class SearchBoxView(QWidget):
     def __init__(self, parent=None):
@@ -8,25 +9,29 @@ class SearchBoxView(QWidget):
         self.setWindowTitle("mat-mat")
         layout = QVBoxLayout()
 
-        # 상단 설정 버튼 및 analyze 버튼
-        top = QHBoxLayout()
-        top.addStretch()
+        # 상단 설정 버튼 및 analyze 버튼 (위아래로, 각각 오른쪽 정렬)
+        top = QVBoxLayout()
+        # 설정 버튼 (오른쪽 정렬)
+        setting_row = QHBoxLayout()
+        setting_row.addStretch()
         self.setting_btn = QPushButton()
         self.setting_btn.setIcon(QIcon("resources/icons/settings.png"))
         self.setting_btn.setIconSize(QSize(32, 32))
         self.setting_btn.setToolTip("설정")
-        self.setting_btn.setStyleSheet("background-color: transparent; border: none; margin-top: 3px; margin-right: 3px;")
-
+        self.setting_btn.setStyleSheet("background-color: transparent; border: none; margin: 3px;")
+        setting_row.addWidget(self.setting_btn)
+        top.addLayout(setting_row)
+        # 분석 버튼 (오른쪽 정렬)
+        analyze_row = QHBoxLayout()
+        analyze_row.addStretch()
         self.analyze_btn = QPushButton()
         self.analyze_btn.setIcon(QIcon("resources/icons/analyze.png"))
         self.analyze_btn.setIconSize(QSize(32, 32))
         self.analyze_btn.setToolTip("분석")
-        self.analyze_btn.setStyleSheet("background-color: transparent; border: none; margin-top: 3px; margin-right: 3px;")
+        self.analyze_btn.setStyleSheet("background-color: transparent; border: none; margin: 3px;")
         self.analyze_btn.clicked.connect(self.show_analyze2)
-
-        top.addStretch()
-        top.addWidget(self.setting_btn)
-        top.addWidget(self.analyze_btn)
+        analyze_row.addWidget(self.analyze_btn)
+        top.addLayout(analyze_row)
         layout.addLayout(top)
 
         # 중앙 검색창 및 버튼
@@ -49,16 +54,25 @@ class SearchBoxView(QWidget):
 
     def goto_setting(self):
         if self.parent() is not None:
-            self.parent().setCurrentIndex(2)  # Setting Window로 이동
+            self.parent().setCurrentIndex(2)
 
     def show_analyze2(self):
-        # Analyze2 창 표시 (실제로는 QWidget이나 QDialog로 구현)
-        from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextEdit
-        analyze2 = QWidget(self)
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("분석 결과"))
-        layout.addWidget(QTextEdit("Analyze2 화면 내용"))
-        analyze2.setLayout(layout)
-        analyze2.setWindowTitle("분석 결과")
-        analyze2.resize(400, 300)
-        analyze2.show()
+        # Analyze 창으로 이동 (인덱스 6)
+        if self.parent() is not None:
+            analyze = self.parent().widget(6)  # Analyze 인덱스 6
+            if hasattr(analyze, 'show_best_score'):
+                # 점수 기록 파일에서 최고 점수 읽기
+                max_score = 0
+                for fname in os.listdir('.'):
+                    if fname.startswith("score_"):
+                        try:
+                            with open(fname, 'r', encoding='utf-8') as f:
+                                lines = f.readlines()
+                                if lines and lines[0].startswith("점수:"):
+                                    s = int(lines[0].split(":")[1].strip())
+                                    if s > max_score:
+                                        max_score = s
+                        except:
+                            pass
+                analyze.show_best_score(max_score)
+                self.parent().setCurrentIndex(6)

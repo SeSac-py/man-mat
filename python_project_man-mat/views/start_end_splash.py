@@ -7,27 +7,19 @@ class StartEndSplash(QWidget):
         super().__init__(parent)
         self.setWindowTitle("mat-mat")
         self.setFixedSize(width, height)
-
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-
         self.label = QLabel(self)
         self.label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.label)
-
         self.setLayout(layout)
-
-        # GIF 애니메이션, 창 크기에 맞게 꽉 채우기
         self.movie = QMovie(gif_path)
         self.movie.setScaledSize(QSize(width, height))
         self.label.setMovie(self.movie)
         self.movie.start()
-
-        # 1초 후 화면 전환 (부모가 QStackedWidget임을 가정)
         QTimer.singleShot(2200, self.goto_next_screen)
 
     def goto_next_screen(self):
-        # QStackedWidget의 두 번째 페이지(=Search Box)로 이동
         if self.parent() is not None:
             self.parent().setCurrentIndex(1)

@@ -56,6 +56,7 @@ class ResultView(QWidget):
         layout.addWidget(self.btn_create)
         self.setLayout(layout)
         self.btn_solve.clicked.connect(self.goto_result1)
+        self.btn_create.clicked.connect(self.goto_result21)  # 이 부분 추가
 
     def go_back(self):
         if self.parent() is not None:
@@ -64,3 +65,7 @@ class ResultView(QWidget):
     def goto_result1(self):
         if self.parent() is not None:
             self.parent().setCurrentIndex(4)  # Result1View로 이동
+
+    def goto_result21(self):
+        if self.parent() is not None:
+            self.parent().setCurrentIndex(8)  # Result21View 인덱스로 이동 (실제 인덱스 맞춰주세요)
