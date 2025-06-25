@@ -1,9 +1,10 @@
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout,
-    QLineEdit, QTextEdit, QSizePolicy
+    QLineEdit, QTextEdit, QSizePolicy, QMessageBox
 )
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt, QTimer, QSize, pyqtSignal
+import sys
 
 class Result1View(QWidget):
     submit_all_answers = pyqtSignal(list)  # 답안 리스트를 보내는 시그널
@@ -16,8 +17,6 @@ class Result1View(QWidget):
         self.time_left = 10 * 60  # 10분(초 단위)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_timer)
-
-        # 예시 정보보안 문제 5개
         self.questions = [
             "1. 공개키 암호화 방식 3가지를 적으시오.",
             "2. 방화벽의 주요 역할에 대해 서술하시오.",
@@ -26,7 +25,6 @@ class Result1View(QWidget):
             "5. 해시 함수의 주요 특징 3가지를 쓰시오."
         ]
         self.user_answers = [""] * self.total_questions
-
         self.init_ui()
         self.update_ui()
         self.timer.start(1000)
@@ -36,14 +34,13 @@ class Result1View(QWidget):
         layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(10)
 
-        # 시계 아이콘 + 남은 시간
+        # 시계 아이콘 + 남은 시간 (중앙정렬)
         clock_layout = QVBoxLayout()
         clock_layout.setAlignment(Qt.AlignHCenter)
         self.clock_icon = QLabel()
         self.clock_icon.setPixmap(QIcon("resources/icons/time.png").pixmap(QSize(50, 50)))
         self.clock_icon.setAlignment(Qt.AlignHCenter)
         clock_layout.addWidget(self.clock_icon)
-
         self.time_label = QLabel()
         self.time_label.setAlignment(Qt.AlignHCenter)
         self.time_label.setStyleSheet('font-size: 15px; color: black;')
@@ -53,7 +50,7 @@ class Result1View(QWidget):
         clock_layout.addWidget(self.time_label)
         layout.addLayout(clock_layout)
 
-        # 문제 텍스트
+        # 문제 텍스트 (중앙정렬)
         self.question_label = QLabel()
         self.question_label.setAlignment(Qt.AlignCenter)
         self.question_label.setWordWrap(True)
@@ -67,7 +64,7 @@ class Result1View(QWidget):
         self.answer_edit.setFixedHeight(60)
         layout.addWidget(self.answer_edit)
 
-        # 제출 버튼 (문제수 표기 위 20px)
+        # 제출 버튼 (중앙정렬)
         self.submit_btn = QPushButton("제출하기")
         self.submit_btn.setStyleSheet("font-size: 16px; color: black;")
         self.submit_btn.setFixedHeight(40)
@@ -76,7 +73,7 @@ class Result1View(QWidget):
         layout.addSpacing(20)
         layout.addWidget(self.submit_btn, alignment=Qt.AlignHCenter)
 
-        # 문제수/페이지 표기 및 입력
+        # 문제수/페이지 표기 (중앙정렬)
         page_layout = QHBoxLayout()
         page_layout.setAlignment(Qt.AlignCenter)
         self.page_edit = QLineEdit()
@@ -92,35 +89,34 @@ class Result1View(QWidget):
         page_layout.addWidget(self.page_label)
         layout.addLayout(page_layout)
 
-        # 네비게이션(좌우 화살표)
+        # 네비게이션(좌우 화살표, 중앙정렬)
         nav_layout = QHBoxLayout()
         nav_layout.setSpacing(30)
-
         self.prev_btn = QPushButton()
         self.prev_btn.setIcon(QIcon("resources/icons/left.png"))
         self.prev_btn.setIconSize(QSize(40, 40))
         self.prev_btn.setFixedSize(60, 60)
         self.prev_btn.setStyleSheet("background: transparent; border: none;")
         self.prev_btn.clicked.connect(self.goto_prev)
-
         self.next_btn = QPushButton()
         self.next_btn.setIcon(QIcon("resources/icons/right.png"))
         self.next_btn.setIconSize(QSize(40, 40))
         self.next_btn.setFixedSize(60, 60)
         self.next_btn.setStyleSheet("background: transparent; border: none;")
         self.next_btn.clicked.connect(self.goto_next)
-
         nav_layout.addWidget(self.prev_btn)
         nav_layout.addStretch()
         nav_layout.addWidget(self.next_btn)
         layout.addLayout(nav_layout)
-
         self.setLayout(layout)
 
     def update_timer(self):
         if self.time_left > 0:
             self.time_left -= 1
-        self.time_label.setText(self.format_time(self.time_left))
+            self.time_label.setText(self.format_time(self.time_left))
+        else:
+            self.timer.stop()
+            self.submit_answers()  # 시간이 0이 되면 자동 제출
 
     def format_time(self, seconds):
         m, s = divmod(seconds, 60)
@@ -163,4 +159,5 @@ class Result1View(QWidget):
 
     def submit_answers(self):
         self.user_answers[self.current_index] = self.answer_edit.toPlainText()
+        self.timer.stop()
         self.submit_all_answers.emit(self.user_answers)
