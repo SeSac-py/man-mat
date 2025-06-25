@@ -1,8 +1,13 @@
+import sys
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QTextEdit, QPushButton, QHBoxLayout, QScrollArea
 )
 from PyQt5.QtGui import QIcon, QFont, QPixmap
 from PyQt5.QtCore import Qt, QSize
+from google import genai
+
+API_KEY = "AIzaSyAk0eLuUUs4f0hr3WYyUu_vnnD8coF44KQ"
+client = genai.Client(api_key=API_KEY)
 
 class Analyze(QWidget):
     def __init__(self, width, height, parent=None):
@@ -70,13 +75,72 @@ class Analyze(QWidget):
         scroll_area.setWidget(container)
         main_layout.addWidget(scroll_area)
 
-    def update_score(self, score):
+        # 문제/정답/사용자 답 저장
+        self.questions = []
+        self.correct_answers = []
+        self.user_answers = []
+
+    def update_score(self, score, questions=None, correct_answers=None, user_answers=None):
         self.score_label.setText("Your Score")
         self.score_value.setText(str(score))
+        if questions is not None:
+            self.questions = questions
+        if correct_answers is not None:
+            self.correct_answers = correct_answers
+        if user_answers is not None:
+            self.user_answers = user_answers
+        self.analyze_with_gemini()
 
-    def show_best_score(self, score):
-        self.score_label.setText("Best Score")
-        self.score_value.setText(str(score))
+    def analyze_with_gemini(self):
+        prompt = "아래는 문제, 정답, 사용자 답입니다.\n"
+        for idx, (q, c, u) in enumerate(zip(self.questions, self.correct_answers, self.user_answers), 1):
+            prompt += f"\n문제 {idx}: {q}\n정답: {c}\n사용자 답: {u}\n"
+
+        prompt += """
+                    위 정보를 바탕으로, 사용자가 부족한 분야를 4줄로 요약해주세요.
+                    그리고 개선하면 좋은 점도 4줄로 요약해주세요.
+                    답변은 반드시 아래 형식으로 해주세요.
+
+                    부족한 분야:
+                    1. ...
+                    2. ...
+                    3. ...
+                    4. ...
+
+                    개선하면 좋을 점:
+                    1. ...
+                    2. ...
+                    3. ...
+                    4. ...
+                """
+
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[prompt]
+            )
+            result = response.text
+
+            lack = []
+            improve = []
+            lines = result.split('\n')
+            section = None
+            for line in lines:
+                if "부족한 분야:" in line or "부족한 분야 :" in line:
+                    section = "lack"
+                elif "개선하면 좋을 점:" in line or "개선하면 좋을 점 :" in line:
+                    section = "improve"
+                elif section == "lack" and line.strip() and line[0].isdigit():
+                    lack.append(line.strip())
+                elif section == "improve" and line.strip() and line[0].isdigit():
+                    improve.append(line.strip())
+
+            # QTextEdit에 출력
+            self.lack_text.setText("\n".join(lack[:4]))
+            self.improve_text.setText("\n".join(improve[:4]))
+        except Exception as e:
+            self.lack_text.setText(f"에러 발생: {e}")
+            self.improve_text.setText("")
 
     def go_back(self):
         if self.parent() is not None:

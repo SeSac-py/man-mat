@@ -11,6 +11,7 @@ from views.result12 import Result12View
 from views.analyze import Analyze
 from views.result21 import Result21View
 from controllers.search_controller import SearchController
+from preprocess import QuestionAnswerLoader
 
 class MainApp(QStackedWidget):
     def __init__(self, gif_path, win_width, win_height):
@@ -19,16 +20,21 @@ class MainApp(QStackedWidget):
         self.search_box = SearchBoxView(self)
         self.setting = SettingWindow(self)
         self.result = ResultView(self)
-        self.result1 = Result1View(self)
+
+        self.total_questions = 5
+        self.qa_loader = QuestionAnswerLoader('./data/questions.csv')
+        self.qa_loader.load_data()
+        self.questions, self.correct_answers = self.qa_loader.get_random_qa(self.total_questions)
+        self.result1 = Result1View(self.questions, self.correct_answers, self)
+
         self.result2 = Result2View(self)
+        self.result12 = Result12View([], [], self)
+        self.result12.goto_analyze_signal.connect(self.goto_analyze)
+        self.addWidget(self.result12)
+
         self.analyze = Analyze(win_width, win_height, parent=self)
         self.result21 = Result21View(self)
-        self.result12 = Result12View([], [], self)  # 빈 데이터로 초기화
-        self.result12.goto_analyze_signal.connect(self.goto_analyze)
-        self.addWidget(self.result12)  # QStackedWidget에 추가
-        self.correct_answers = [
-            "RSA", "트래픽 필터링", "입력값 검증 미흡", "보안 터널링", "복호화 가능"
-        ]
+
         self.addWidget(self.splash)     # 0
         self.addWidget(self.search_box) # 1
         self.addWidget(self.setting)    # 2
@@ -41,23 +47,28 @@ class MainApp(QStackedWidget):
 
         self.setCurrentIndex(0)
         self.search_controller = SearchController(self.search_box)
+        self.last_user_answers = []  # 사용자 답 저장용
+
         # 제출 시그널 연결
         self.result1.submit_all_answers.connect(self.update_result12)
 
     def update_result12(self, user_answers):
-        # Result12를 재설정
-        self.result12.set_user_answers(user_answers, self.correct_answers)
+        self.last_user_answers = user_answers
+        if hasattr(self, 'result12'):
+            self.result12.set_user_answers(user_answers, self.correct_answers)
+        else:
+            self.result12 = Result12View(user_answers, self.correct_answers, self)
+            self.addWidget(self.result12)
         self.setCurrentIndex(7)  # Result12로 이동
-    
-    def show_result12(self, user_answers):
-        self.result12.set_user_answers(user_answers, self.correct_answers)
-        self.setCurrentWidget(self.result12)
 
     def goto_analyze(self, score):
-        self.analyze.update_score(score)  # main이 Analyze에 점수 전달
+        self.analyze.update_score(
+            score,
+            self.questions,
+            self.correct_answers,
+            self.last_user_answers
+        )
         self.setCurrentIndex(6)  # Analyze로 이동
-
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
