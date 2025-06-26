@@ -8,15 +8,21 @@ from PyQt5.QtCore import Qt, QTimer, QSize, pyqtSignal
 class Result1View(QWidget):
     submit_all_answers = pyqtSignal(list)
 
-    def __init__(self, questions, answers, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("mat-mat")
+        self.total_questions = 5
         self.current_index = 0
         self.time_left = 10 * 60  # 10분(초 단위)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_timer)
-        self.questions = questions  
-        self.total_questions = len(self.questions)
+        self.questions = [
+            "1. 공개키 암호화 방식 3가지를 적으시오.",
+            "2. 방화벽의 주요 역할에 대해 서술하시오.",
+            "3. SQL Injection 공격에 가장 취약한 상황은?",
+            "4. VPN의 주된 목적은?",
+            "5. 해시 함수의 주요 특징 3가지를 쓰시오."
+        ]
         self.user_answers = [""] * self.total_questions
         self.init_ui()
         self.update_ui()

@@ -1,9 +1,19 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QMessageBox
+from PyQt5.QtWidgets import (
+    QWidget, QVBoxLayout, QLabel, QPushButton, QMessageBox
+)
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 import os
 from datetime import datetime
-from AES import evaluate  # 추가
+
+def get_wrong_question_message(wrong_indices):
+    count = len(wrong_indices)
+    if count == 0:
+        return "perfect score"
+    elif count > 3:
+        return f"{count}개 틀렸습니다"
+    else:
+        return "틀린 문항: " + ", ".join(str(i) for i in wrong_indices)
 
 class Result12View(QWidget):
     goto_analyze_signal = pyqtSignal(int)
@@ -13,8 +23,7 @@ class Result12View(QWidget):
         self.setWindowTitle("man-mat")
         self.user_answers = user_answers
         self.correct_answers = correct_answers
-        self.scores = self.calculate_scores()  # 각 문항별 점수
-        self.total_score = self.calculate_total_score()  # 전체 평균 점수(0~100)
+        self.score = self.calculate_score()
         layout = QVBoxLayout()
         layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(15)
@@ -27,19 +36,20 @@ class Result12View(QWidget):
         layout.addWidget(score_label)
 
         # 점수(빨간색, 크게)
-        self.score_value = QLabel(str(self.total_score))
+        self.score_value = QLabel(str(self.score))
         self.score_value.setAlignment(Qt.AlignHCenter)
         self.score_value.setFont(QFont("Arial", 55, QFont.Bold))
         self.score_value.setStyleSheet("color: red;")
         layout.addWidget(self.score_value)
 
-        # 각 문항별 점수 표시
-        for idx, (user, correct, score) in enumerate(zip(self.user_answers, self.correct_answers, self.scores), 1):
-            detail_label = QLabel(f"{idx}번: {score} / 10")
-            detail_label.setFont(QFont("Arial", 14))
-            detail_label.setAlignment(Qt.AlignHCenter)
-            layout.addWidget(detail_label)
+        # 틀린 문항 메시지
+        self.wrong_msg_label = QLabel()
+        self.wrong_msg_label.setAlignment(Qt.AlignHCenter)
+        self.wrong_msg_label.setFont(QFont("Arial", 14))
+        self.wrong_msg_label.setStyleSheet("color: black; margin: 0px; padding: 0px;")
+        layout.addWidget(self.wrong_msg_label)
 
+        # 버튼들 (분석하기, 다시하기, 종료, 저장)
         btn_font = QFont("Arial", 16)
         self.analyze_btn = QPushButton("분석 하기")
         self.analyze_btn.setFont(btn_font)
@@ -67,55 +77,39 @@ class Result12View(QWidget):
 
         self.setLayout(layout)
 
-    def calculate_scores(self):
-        scores = []
-        for user, correct in zip(self.user_answers, self.correct_answers):
-            score = evaluate(correct, user)  
-            scores.append(score)
-        return scores
-
-    def calculate_total_score(self):
-        if not self.scores:
+    def calculate_score(self):
+        correct_count = 0
+        total = len(self.correct_answers)
+        if total == 0:
             return 0
-        avg = sum(self.scores) / len(self.scores)
-        return int(avg * 10)  # 0~100점 환산
+        for user, correct in zip(self.user_answers, self.correct_answers):
+            if user.strip().lower() == correct.strip().lower():
+                correct_count += 1
+        return int((correct_count / total) * 100)
 
     def set_user_answers(self, user_answers, correct_answers):
         self.user_answers = user_answers
         self.correct_answers = correct_answers
-        self.scores = self.calculate_scores()
-        self.total_score = self.calculate_total_score()
-        self.score_value.setText(str(self.total_score))
-        # 각 문항별 점수 표시 갱신 (레이아웃 클리어 후 다시 추가)
-        layout = self.layout()
-        # 기존 점수 표시 위젯 삭제 (SCORE, 점수, 버튼은 제외)
-        for i in reversed(range(layout.count())):
-            widget = layout.itemAt(i).widget()
-            if widget and widget not in (self.score_value, self.analyze_btn, self.retry_btn, self.end_btn, self.save_btn):
-                if widget.text() != "SCORE":
-                    layout.removeWidget(widget)
-                    widget.deleteLater()
-        # 각 문항별 점수 표시 다시 추가
-        for idx, (user, correct, score) in enumerate(zip(self.user_answers, self.correct_answers, self.scores), 1):
-            detail_label = QLabel(f"{idx}번: {score} / 10")
-            detail_label.setFont(QFont("Arial", 14))
-            detail_label.setAlignment(Qt.AlignHCenter)
-            layout.insertWidget(2 + idx, detail_label)  # SCORE, 점수 다음에 추가
+        self.score = self.calculate_score()
+        self.score_value.setText(str(self.score))
+        wrong = [i+1 for i, (u, c) in enumerate(zip(self.user_answers, self.correct_answers))
+                 if u.strip().lower() != c.strip().lower()]
+        self.wrong_msg_label.setText(get_wrong_question_message(wrong))
 
     def goto_analyze(self):
-        self.goto_analyze_signal.emit(self.total_score)
+        self.goto_analyze_signal.emit(self.score)
 
     def goto_result1(self):
         if self.parent() is not None:
-            result1 = self.parent().widget(4)  # Result1View의 인덱스가 4라고 가정
+            result1 = self.parent().widget(4)
             if hasattr(result1, 'init_timer_and_answers'):
                 result1.init_timer_and_answers()
-            self.parent().setCurrentIndex(4)  # Result1로 이동
+            self.parent().setCurrentIndex(4)
 
     def end_program(self):
         if self.parent() is not None:
-            self.parent().setCurrentIndex(0)  # StartEndSplash로 이동
-            QTimer.singleShot(2200, self.parent().close)  # 2.2초 후 창 닫기
+            self.parent().setCurrentIndex(0)
+            QTimer.singleShot(2200, self.parent().close)
 
     def save_result(self):
         msg = QMessageBox()
@@ -130,7 +124,7 @@ class Result12View(QWidget):
     def save_to_file(self):
         now = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"score_{now}.txt"
-        current_score = self.total_score  # 총점 사용
+        current_score = self.score
         max_score = 0
         for fname in os.listdir('.'):
             if fname.startswith("score_"):
