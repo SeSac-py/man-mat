@@ -91,7 +91,6 @@ class Result12View(QWidget):
         return int(avg * 10)  # 0~100점 환산
 
     def set_user_answers(self, user_answers, correct_answers):
-        # 1번 코드의 set_user_answers 로직 + 2번 코드 스타일
         self.user_answers = user_answers
         self.correct_answers = correct_answers
         self.scores = self.calculate_scores()
