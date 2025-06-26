@@ -77,10 +77,3 @@ class SettingWindow(QWidget):
     def go_back(self):
         if self.parent() is not None:
             self.parent().setCurrentIndex(1)  # SearchBoxView로 이동
-
-    # def goto_analyze(self):
-    #     if self.parent() is not None:
-    #         analyze = self.parent().widget(6)  # AnalyzeView index:6
-    #         if hasattr(analyze, 'init_timer_and_answers'):
-    #             # analyze best score 보여주기 (할일)
-    #         self.parent().setCurrentIndex(6)  # Analyze로 이동

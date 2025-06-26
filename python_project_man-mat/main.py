@@ -25,13 +25,10 @@ class MainApp(QStackedWidget):
         self.qa_loader = QuestionAnswerLoader('./data/questions.csv')
         self.qa_loader.load_data()
         self.questions, self.correct_answers = self.qa_loader.get_random_qa(self.total_questions)
+        
         self.result1 = Result1View(self.questions, self.correct_answers, self)
-
         self.result2 = Result2View(self)
         self.result12 = Result12View([], [], self)
-        self.result12.goto_analyze_signal.connect(self.goto_analyze)
-        self.addWidget(self.result12)
-
         self.analyze = Analyze(win_width, win_height, parent=self)
         self.result21 = Result21View(self)
 
@@ -49,26 +46,24 @@ class MainApp(QStackedWidget):
         self.search_controller = SearchController(self.search_box)
         self.last_user_answers = []  # 사용자 답 저장용
 
-        # 제출 시그널 연결
-        self.result1.submit_all_answers.connect(self.update_result12)
+        self.result12.goto_analyze_signal.connect(self.goto_analyze)    # 시그널 연결
+        self.result1.submit_all_answers.connect(self.update_result12)   # 제출 시그널 연결 (예시: Result1View에서 제출 시 Result12로 이동 및 점수 전달)
 
     def update_result12(self, user_answers):
-        self.last_user_answers = user_answers
-        if hasattr(self, 'result12'):
-            self.result12.set_user_answers(user_answers, self.correct_answers)
-        else:
-            self.result12 = Result12View(user_answers, self.correct_answers, self)
-            self.addWidget(self.result12)
-        self.setCurrentIndex(7)  # Result12로 이동
+        # 틀린 문항 계산
+        wrong = [i+1 for i, (u, c) in enumerate(zip(user_answers, self.correct_answers))
+                 if u.strip().lower() != c.strip().lower()]
+        # Result12에 점수 및 틀린 문항 전달
+        self.result12.set_user_answers(user_answers, self.correct_answers)
+        # [수정] Analyze에 점수 및 틀린 문항 전달 (self.result12.total_score 사용!)
+        score = self.result12.total_score  # [수정]
+        self.analyze.update_score(score, wrong)
+        # Result12로 이동
+        self.setCurrentIndex(7)
 
     def goto_analyze(self, score):
-        self.analyze.update_score(
-            score,
-            self.questions,
-            self.correct_answers,
-            self.last_user_answers
-        )
-        self.setCurrentIndex(6)  # Analyze로 이동
+        # Analyze로 이동 (틀린 문항 리스트는 이미 update_result12에서 전달됨)
+        self.setCurrentIndex(6)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

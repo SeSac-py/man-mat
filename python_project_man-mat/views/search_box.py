@@ -52,6 +52,17 @@ class SearchBoxView(QWidget):
         self.setLayout(layout)
         self.setting_btn.clicked.connect(self.goto_setting)
 
+        # 검색창 엔터 및 버튼 클릭 연결
+        self.search_edit.returnPressed.connect(self.on_search)
+        self.search_btn.clicked.connect(self.on_search)
+
+    def on_search(self):
+        keyword = self.search_edit.text().strip()
+        print(f"검색어: {keyword}")  # 실제 검색 로직은 여기에 추가
+        # Result 창으로 이동 (인덱스 3)
+        if self.parent() is not None:
+            self.parent().setCurrentIndex(3)  # ResultView로 이동
+
     def goto_setting(self):
         if self.parent() is not None:
             self.parent().setCurrentIndex(2)
