@@ -1,10 +1,9 @@
-from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton, QMessageBox
-)
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QMessageBox
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 import os
 from datetime import datetime
+from AES import evaluate  
 
 def get_wrong_question_message(wrong_indices):
     count = len(wrong_indices)
@@ -14,7 +13,7 @@ def get_wrong_question_message(wrong_indices):
         return f"{count}개 틀렸습니다"
     else:
         return "틀린 문항: " + ", ".join(str(i) for i in wrong_indices)
-
+    
 class Result12View(QWidget):
     goto_analyze_signal = pyqtSignal(int)
 
@@ -23,7 +22,8 @@ class Result12View(QWidget):
         self.setWindowTitle("man-mat")
         self.user_answers = user_answers
         self.correct_answers = correct_answers
-        self.score = self.calculate_score()
+        self.scores = self.calculate_scores()  # 각 문항별 점수
+        self.total_score = self.calculate_total_score()  # 전체 평균 점수(0~100)
         layout = QVBoxLayout()
         layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(15)
@@ -36,7 +36,7 @@ class Result12View(QWidget):
         layout.addWidget(score_label)
 
         # 점수(빨간색, 크게)
-        self.score_value = QLabel(str(self.score))
+        self.score_value = QLabel(str(self.scores))
         self.score_value.setAlignment(Qt.AlignHCenter)
         self.score_value.setFont(QFont("Arial", 55, QFont.Bold))
         self.score_value.setStyleSheet("color: red;")
@@ -77,27 +77,32 @@ class Result12View(QWidget):
 
         self.setLayout(layout)
 
-    def calculate_score(self):
-        correct_count = 0
-        total = len(self.correct_answers)
-        if total == 0:
-            return 0
+    def calculate_scores(self):
+        scores = []
         for user, correct in zip(self.user_answers, self.correct_answers):
-            if user.strip().lower() == correct.strip().lower():
-                correct_count += 1
-        return int((correct_count / total) * 100)
+            score = evaluate(correct, user)  
+            scores.append(score)
+        return scores
+
+    def calculate_total_score(self):
+        if not self.scores:
+            return 0
+        avg = sum(self.scores) / len(self.scores)
+        return int(avg * 10)  # 0~100점 환산
 
     def set_user_answers(self, user_answers, correct_answers):
+        # 1번 코드의 set_user_answers 로직 + 2번 코드 스타일
         self.user_answers = user_answers
         self.correct_answers = correct_answers
-        self.score = self.calculate_score()
-        self.score_value.setText(str(self.score))
+        self.scores = self.calculate_scores()
+        self.total_score = self.calculate_total_score()
+        self.score_value.setText(str(self.total_score))
         wrong = [i+1 for i, (u, c) in enumerate(zip(self.user_answers, self.correct_answers))
                  if u.strip().lower() != c.strip().lower()]
         self.wrong_msg_label.setText(get_wrong_question_message(wrong))
 
     def goto_analyze(self):
-        self.goto_analyze_signal.emit(self.score)
+        self.goto_analyze_signal.emit(self.scores)
 
     def goto_result1(self):
         if self.parent() is not None:

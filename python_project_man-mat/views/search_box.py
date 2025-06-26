@@ -2,6 +2,8 @@ from PyQt5.QtWidgets import QWidget, QLineEdit, QPushButton, QHBoxLayout, QVBoxL
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QSize
 import os
+import os
+os.environ['QT_PLUGIN_PATH'] = '~/.local/lib/python3.8/site-packages/PyQt5/Qt5/plugins'
 
 class SearchBoxView(QWidget):
     def __init__(self, parent=None):
@@ -16,17 +18,18 @@ class SearchBoxView(QWidget):
         setting_row.addStretch()
         self.setting_btn = QPushButton()
         self.setting_btn.setIcon(QIcon("resources/icons/settings.png"))
-        self.setting_btn.setIconSize(QSize(32, 32))
+        self.setting_btn.setIconSize(QSize(35, 35))
         self.setting_btn.setToolTip("설정")
         self.setting_btn.setStyleSheet("background-color: transparent; border: none; margin: 3px;")
         setting_row.addWidget(self.setting_btn)
         top.addLayout(setting_row)
+
         # 분석 버튼 (오른쪽 정렬)
         analyze_row = QHBoxLayout()
         analyze_row.addStretch()
         self.analyze_btn = QPushButton()
         self.analyze_btn.setIcon(QIcon("resources/icons/analyze.png"))
-        self.analyze_btn.setIconSize(QSize(32, 32))
+        self.analyze_btn.setIconSize(QSize(37, 37))
         self.analyze_btn.setToolTip("분석")
         self.analyze_btn.setStyleSheet("background-color: transparent; border: none; margin: 3px;")
         self.analyze_btn.clicked.connect(self.show_analyze2)
